@@ -7,6 +7,7 @@ import secrets
 import csv
 import scanner, ag_scanner
 import config
+import re
 
 
 class Main(QMainWindow):
@@ -119,6 +120,27 @@ class Main(QMainWindow):
         self.scannedCodesTable.horizontalHeader().setSectionResizeMode(3, QHeaderView.Stretch)
         self.scannedCodesTable.horizontalHeader().setSectionResizeMode(4, QHeaderView.Stretch)
 
+        # Scan top right widgets
+        self.scan_nie_label = QLabel("NIE : ")
+        self.scan_nie_text = QLineEdit()
+        self.scan_nie_text.setReadOnly(True)
+        self.scan_nie_exp_label = QLabel('NIE Expired : ')
+        self.scan_nie_exp_text = QLineEdit()
+        self.scan_nie_exp_text.setReadOnly(True)
+        self.scan_batch_label = QLabel("Batch No : ")
+        self.scan_batch_text = QLineEdit()
+        self.scan_batch_text.setReadOnly(True)
+        self.scan_prod_label = QLabel('Production : ')
+        self.scan_prod_text = QLineEdit()
+        self.scan_prod_text.setReadOnly(True)
+        self.scan_exp_label = QLabel('Expired : ')
+        self.scan_exp_text = QLineEdit()
+        self.scan_exp_text.setReadOnly(True)
+        self.scan_serial_label = QLabel('Serial No : ')
+        self.scan_serial_text = QTextEdit()
+        self.scan_serial_text.setReadOnly(True)
+        self.scan_serial_text.setFixedHeight(100)
+
     def layouts(self):
         # tab1
         self.mainLayout = QHBoxLayout()
@@ -165,6 +187,14 @@ class Main(QMainWindow):
         self.scanMiddleGroupBox.setContentsMargins(20, 40, 20, 20)
 
         self.scanMainLeftLayout.addWidget(self.scannedCodesTable)
+        self.scanRightTopLayout.addRow(self.scan_nie_label, self.scan_nie_text)
+        self.scanRightTopLayout.addRow(self.scan_nie_exp_label, self.scan_nie_exp_text)
+        self.scanRightTopLayout.addRow(self.scan_batch_label, self.scan_batch_text)
+        self.scanRightTopLayout.addRow(self.scan_prod_label, self.scan_prod_text)
+        self.scanRightTopLayout.addRow(self.scan_exp_label, self.scan_exp_text)
+        self.scanRightTopLayout.addRow(self.scan_serial_label, self.scan_serial_text)
+
+        self.scanTopGroupBox.setLayout(self.scanRightTopLayout)
         self.scanMainRightLayout.addWidget(self.scanTopGroupBox, 60)
         self.scanMainRightLayout.addWidget(self.scanMiddleGroupBox, 40)
         self.scanMainLayout.addLayout(self.scanMainLeftLayout, 70)
@@ -175,6 +205,7 @@ class Main(QMainWindow):
         self.nieEntry.setText("")
         self.batchEntry.setText("")
         self.codeQuantityEntry.setText("")
+        self.exportButton.setEnabled(False)
 
         row_count = self.codesTable.rowCount()
         for row in reversed(range(0, row_count)):
@@ -292,9 +323,50 @@ class Main(QMainWindow):
 
     def scanReceive(self):
         while self.scanner.canReadLine():
-            text = self.scanner.readLine().data().decode()
-            text = text.rstrip('\r\n')
-            print(text)
+            self.code_text = self.scanner.readLine().data().decode()
+            self.code_text = self.code_text.rstrip('\r\n')
+
+        try:
+            self.get_code(self.code_text)
+            print(self.code)
+        except Exception as e:
+            print(str(e))
+
+        try:
+            row_number = self.scannedCodesTable.rowCount()
+            self.scannedCodesTable.insertRow(row_number)
+            for column_number, data in enumerate(self.code):
+                self.scannedCodesTable.setItem(row_number, column_number, QTableWidgetItem(data))
+        except Exception as e:
+            print(str(e))
+
+    def get_code(self, text):
+        nie_pattern = '\(90\)\w*'
+        nie_exp_pattern = '\(91\)\w*'
+        batch_pattern = '\(10\)\w*'
+        prod_pattern = '\(11\)\w*'
+        exp_pattern = '\(17\)\w*'
+        serial_pattern = '\(21\)\w*'
+
+        self.code = []
+
+        self.nie = self.get_sub_code(nie_pattern, text)
+        self.nie_exp = self.get_sub_code(nie_exp_pattern, text)
+        self.batch = self.get_sub_code(batch_pattern, text)
+        self.prod = self.get_sub_code(prod_pattern, text)
+        self.exp = self.get_sub_code(exp_pattern, text)
+        self.serial = self.get_sub_code(serial_pattern, text)
+
+        self.code.append(self.nie)
+        self.code.append(self.nie_exp)
+        self.code.append(self.batch)
+        self.code.append(self.prod)
+        self.code.append(self.exp)
+        self.code.append(self.serial)
+
+    def get_sub_code(self, pattern, text):
+        res = re.findall(pattern, text)
+        return res[0][4:]
 
 
 def main():
