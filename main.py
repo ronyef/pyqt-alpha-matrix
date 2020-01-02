@@ -10,6 +10,8 @@ import config
 import re
 
 
+
+
 class Main(QMainWindow):
     def __init__(self):
         super().__init__()
@@ -140,6 +142,59 @@ class Main(QMainWindow):
         self.scan_serial_text = QTextEdit()
         self.scan_serial_text.setReadOnly(True)
         self.scan_serial_text.setFixedHeight(100)
+        self.scanExportButton = QPushButton("Export CSV")
+        self.scanExportButton.clicked.connect(self.scanExport)
+        self.scanResetButton = QPushButton("Reset")
+        self.scanResetButton.clicked.connect(self.resetScanTable)
+
+        # Scan bottom widgets
+        self.scanRejectTitle = QLabel("Reject :")
+        self.scan_reject_lcd = QLCDNumber()
+        self.scanSuccessTitle = QLabel("Scanned :")
+        self.scan_success_lcd = QLCDNumber()
+        self.scanRateTitle = QLabel("Accuracy :")
+        self.scan_rate_lcd = QLCDNumber()
+        self.scanPercentLabel = QLabel("%")
+        self.scanCounterResetButton = QPushButton("Reset Counter")
+        self.scanCounterResetButton.clicked.connect(self.resetScanCounter)
+
+        # AGGREGATION WIDGET
+        self.aggregationCodesTable = QTableWidget()
+        self.aggregationCodesTable.setColumnCount(6)
+        self.aggregationCodesTable.setHorizontalHeaderItem(0, QTableWidgetItem("NIE"))
+        self.aggregationCodesTable.setHorizontalHeaderItem(1, QTableWidgetItem("NIE Exp"))
+        self.aggregationCodesTable.setHorizontalHeaderItem(2, QTableWidgetItem("Batch"))
+        self.aggregationCodesTable.setHorizontalHeaderItem(3, QTableWidgetItem("Prod Date"))
+        self.aggregationCodesTable.setHorizontalHeaderItem(4, QTableWidgetItem("Expired"))
+        self.aggregationCodesTable.setHorizontalHeaderItem(5, QTableWidgetItem("Serial"))
+        self.aggregationCodesTable.horizontalHeader().setSectionResizeMode(1, QHeaderView.Stretch)
+        self.aggregationCodesTable.horizontalHeader().setSectionResizeMode(3, QHeaderView.Stretch)
+        self.aggregationCodesTable.horizontalHeader().setSectionResizeMode(4, QHeaderView.Stretch)
+
+        # Scan top right widgets
+        self.aggregate_nie_label = QLabel("NIE : ")
+        self.aggregate_nie_text = QLineEdit()
+        self.aggregate_nie_text.setReadOnly(True)
+        self.aggregate_nie_exp_label = QLabel('NIE Expired : ')
+        self.aggregate_nie_exp_text = QLineEdit()
+        self.aggregate_nie_exp_text.setReadOnly(True)
+        self.aggregate_batch_label = QLabel("Batch No : ")
+        self.aggregate_batch_text = QLineEdit()
+        self.aggregate_batch_text.setReadOnly(True)
+        self.aggregate_prod_label = QLabel('Production : ')
+        self.aggregate_prod_text = QLineEdit()
+        self.aggregate_prod_text.setReadOnly(True)
+        self.aggregate_exp_label = QLabel('Expired : ')
+        self.aggregate_exp_text = QLineEdit()
+        self.aggregate_exp_text.setReadOnly(True)
+        self.aggregate_serial_label = QLabel('Serial No : ')
+        self.aggregate_serial_text = QTextEdit()
+        self.aggregate_serial_text.setReadOnly(True)
+        self.aggregate_serial_text.setFixedHeight(100)
+
+        # Aggregation bottom widgets
+        self.aggregate_reject_lcd = QLCDNumber()
+        self.aggregate_reject_lcd.setMinimumHeight(80)
 
     def layouts(self):
         # tab1
@@ -180,11 +235,15 @@ class Main(QMainWindow):
         self.scanMainLeftLayout = QVBoxLayout()
         self.scanMainRightLayout = QVBoxLayout()
         self.scanRightTopLayout = QFormLayout()
-        self.scanRightMiddleLayout = QFormLayout()
+        self.scanRightMiddleLayout = QVBoxLayout()
+        self.scanSuccessLayout = QHBoxLayout()
+        self.scanRejectLayout = QHBoxLayout()
+        self.scanRateLayout = QHBoxLayout()
+        self.scanButtonBarLayout = QHBoxLayout()
         self.scanTopGroupBox = QGroupBox("Scanned Code")
         self.scanTopGroupBox.setContentsMargins(20, 40, 20, 20)
-        self.scanMiddleGroupBox = QGroupBox("Reject Counter")
-        self.scanMiddleGroupBox.setContentsMargins(20, 40, 20, 20)
+        self.scanMiddleGroupBox = QGroupBox("Product Counter")
+        self.scanMiddleGroupBox.setContentsMargins(10, 20, 10, 10)
 
         self.scanMainLeftLayout.addWidget(self.scannedCodesTable)
         self.scanRightTopLayout.addRow(self.scan_nie_label, self.scan_nie_text)
@@ -193,13 +252,61 @@ class Main(QMainWindow):
         self.scanRightTopLayout.addRow(self.scan_prod_label, self.scan_prod_text)
         self.scanRightTopLayout.addRow(self.scan_exp_label, self.scan_exp_text)
         self.scanRightTopLayout.addRow(self.scan_serial_label, self.scan_serial_text)
+        self.scanRightTopLayout.addRow('', self.scanResetButton)
+        self.scanRightTopLayout.addRow('', self.scanExportButton)
+
+        # Right bottom layout
+        self.scanSuccessLayout.addWidget(self.scanSuccessTitle)
+        self.scanSuccessLayout.addWidget(self.scan_success_lcd)
+        self.scanRejectLayout.addWidget(self.scanRejectTitle)
+        self.scanRejectLayout.addWidget(self.scan_reject_lcd)
+        self.scanRateLayout.addWidget(self.scanRateTitle, 60)
+        self.scanRateLayout.addWidget(self.scan_rate_lcd, 30)
+        self.scanRateLayout.addWidget(self.scanPercentLabel, 10)
+        self.scanRightMiddleLayout.addLayout(self.scanSuccessLayout)
+        self.scanRightMiddleLayout.addLayout(self.scanRejectLayout)
+        self.scanRightMiddleLayout.addLayout(self.scanRateLayout)
+        self.scanRightMiddleLayout.addWidget(self.scanCounterResetButton)
+        self.scanRightMiddleLayout.addLayout(self.scanButtonBarLayout)
 
         self.scanTopGroupBox.setLayout(self.scanRightTopLayout)
+        self.scanMiddleGroupBox.setLayout(self.scanRightMiddleLayout)
         self.scanMainRightLayout.addWidget(self.scanTopGroupBox, 60)
         self.scanMainRightLayout.addWidget(self.scanMiddleGroupBox, 40)
         self.scanMainLayout.addLayout(self.scanMainLeftLayout, 70)
         self.scanMainLayout.addLayout(self.scanMainRightLayout, 30)
         self.tab2.setLayout(self.scanMainLayout)
+
+        # Tab3
+        self.aggregateMainLayout = QHBoxLayout()
+        self.aggregateMainLeftLayout = QVBoxLayout()
+        self.aggregateMainRightLayout = QVBoxLayout()
+        self.aggregateRightTopLayout = QFormLayout()
+        self.aggregateRightMiddleLayout = QHBoxLayout()
+        self.aggregateTopGroupBox = QGroupBox("Scanned Code")
+        self.aggregateTopGroupBox.setContentsMargins(20, 40, 20, 20)
+        self.aggregateMiddleGroupBox = QGroupBox("Product Counter")
+        self.aggregateMiddleGroupBox.setContentsMargins(20, 40, 20, 20)
+
+        self.aggregateMainLeftLayout.addWidget(self.aggregationCodesTable)
+        self.aggregateRightTopLayout.addRow(self.aggregate_nie_label, self.aggregate_nie_text)
+        self.aggregateRightTopLayout.addRow(self.aggregate_nie_exp_label, self.aggregate_nie_exp_text)
+        self.aggregateRightTopLayout.addRow(self.aggregate_batch_label, self.aggregate_batch_text)
+        self.aggregateRightTopLayout.addRow(self.aggregate_prod_label, self.aggregate_prod_text)
+        self.aggregateRightTopLayout.addRow(self.aggregate_exp_label, self.aggregate_exp_text)
+        self.aggregateRightTopLayout.addRow(self.aggregate_serial_label, self.aggregate_serial_text)
+
+        # Right bottom layout
+        self.aggregateRightMiddleLayout.addWidget(self.aggregate_reject_lcd)
+
+        self.aggregateTopGroupBox.setLayout(self.aggregateRightTopLayout)
+        self.aggregateMiddleGroupBox.setLayout(self.aggregateRightMiddleLayout)
+        self.aggregateMainRightLayout.addWidget(self.aggregateTopGroupBox, 60)
+        self.aggregateMainRightLayout.addWidget(self.aggregateMiddleGroupBox, 40)
+        self.aggregateMainLayout.addLayout(self.aggregateMainLeftLayout, 70)
+        self.aggregateMainLayout.addLayout(self.aggregateMainRightLayout, 30)
+        self.tab3.setLayout(self.aggregateMainLayout)
+
 
     def resetCodeGen(self):
         self.nieEntry.setText("")
@@ -326,19 +433,32 @@ class Main(QMainWindow):
             self.code_text = self.scanner.readLine().data().decode()
             self.code_text = self.code_text.rstrip('\r\n')
 
-        try:
-            self.get_code(self.code_text)
-            print(self.code)
-        except Exception as e:
-            print(str(e))
+        self.get_code(self.code_text)
 
-        try:
-            row_number = self.scannedCodesTable.rowCount()
-            self.scannedCodesTable.insertRow(row_number)
-            for column_number, data in enumerate(self.code):
-                self.scannedCodesTable.setItem(row_number, column_number, QTableWidgetItem(data))
-        except Exception as e:
-            print(str(e))
+        # Insert data to table on tab2
+        row_number = self.scannedCodesTable.rowCount()
+        self.scannedCodesTable.insertRow(row_number)
+        for column_number, data in enumerate(self.code):
+            self.scannedCodesTable.setItem(row_number, column_number, QTableWidgetItem(data))
+
+        # Update right top info
+        self.scan_nie_text.setText(self.code[0])
+        self.scan_nie_exp_text.setText(self.code[1])
+        self.scan_batch_text.setText(self.code[2])
+        self.scan_prod_text.setText(self.code[3])
+        self.scan_exp_text.setText(self.code[4])
+        self.scan_serial_text.setText(self.code[5])
+
+        # Update counter
+        config.scan_count += 1
+        config.scan_rate = round((config.scan_count - config.scan_reject) / config.scan_count * 100, 2)
+        scanned = str(config.scan_count)
+        scan_rate = str(config.scan_rate)
+        scan_reject = str(config.scan_reject)
+
+        self.scan_success_lcd.display(scanned)
+        self.scan_reject_lcd.display(scan_reject)
+        self.scan_rate_lcd.display(scan_rate)
 
     def get_code(self, text):
         nie_pattern = '\(90\)\w*'
@@ -350,23 +470,77 @@ class Main(QMainWindow):
 
         self.code = []
 
-        self.nie = self.get_sub_code(nie_pattern, text)
-        self.nie_exp = self.get_sub_code(nie_exp_pattern, text)
-        self.batch = self.get_sub_code(batch_pattern, text)
-        self.prod = self.get_sub_code(prod_pattern, text)
-        self.exp = self.get_sub_code(exp_pattern, text)
-        self.serial = self.get_sub_code(serial_pattern, text)
+        nie = self.get_sub_code(nie_pattern, text)
+        nie_exp = self.get_sub_code(nie_exp_pattern, text)
+        nie_exp = nie_exp[6:] + '/' + nie_exp[4:6] + '/' + nie_exp[:4]
+        batch = self.get_sub_code(batch_pattern, text)
+        prod = self.get_sub_code(prod_pattern, text)
+        prod = prod[6:] + '/' + prod[4:6] + '/' + prod[:4]
+        exp = self.get_sub_code(exp_pattern, text)
+        exp = exp[6:] + '/' + exp[4:6] + '/' + exp[:4]
+        serial = self.get_sub_code(serial_pattern, text)
 
-        self.code.append(self.nie)
-        self.code.append(self.nie_exp)
-        self.code.append(self.batch)
-        self.code.append(self.prod)
-        self.code.append(self.exp)
-        self.code.append(self.serial)
+        self.code.append(nie)
+        self.code.append(nie_exp)
+        self.code.append(batch)
+        self.code.append(prod)
+        self.code.append(exp)
+        self.code.append(serial)
 
     def get_sub_code(self, pattern, text):
         res = re.findall(pattern, text)
         return res[0][4:]
+
+    def resetScanCounter(self):
+        config.scan_reject = 0
+        reject = str(config.scan_reject)
+        count = str(config.scan_count)
+        rate = str(config.scan_rate)
+        config.scan_count = 0
+        config.scan_rate = 0
+        self.scan_success_lcd.display(count)
+        self.scan_reject_lcd.display(reject)
+        self.scan_rate_lcd.display(rate)
+
+    def resetScanTable(self):
+        confirm = QMessageBox.question(self, "Warning", "Are you sure to reset scanned codes?", QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
+        if confirm == QMessageBox.Yes:
+            row_count = self.scannedCodesTable.rowCount()
+            for row in reversed(range(0, row_count)):
+                self.scannedCodesTable.removeRow(row)
+
+            self.scan_nie_text.setText('')
+            self.scan_nie_exp_text.setText('')
+            self.scan_batch_text.setText('')
+            self.scan_prod_text.setText('')
+            self.scan_exp_text.setText('')
+            self.scan_serial_text.setText('')
+
+    def scanExport(self):
+        date_time = QDateTime.currentDateTime().toString("yyMMddhhmmss")
+        formatted_file_name = 'scanned' + date_time + '.csv'
+        file_name = QFileDialog.getSaveFileName(self, 'Save File', formatted_file_name, 'CSV (*.csv)')
+
+        if file_name[0] != "":
+            row_num = self.scannedCodesTable.rowCount()
+            codes = []
+
+            for row in range(0, row_num):
+                code_line = []
+
+                for col in range(0, 6):
+                    code_line.append(self.scannedCodesTable.item(row, col).text())
+
+                codes.append(code_line)
+
+            try:
+                with open(file_name[0], 'w', newline='') as f:
+                    writer = csv.writer(f)
+                    writer.writerows(codes)
+
+                QMessageBox.information(self, 'Success', 'CSV has been exported')
+            except:
+                QMessageBox.information(self, 'Error', 'CSV has not been exported')
 
 
 def main():
