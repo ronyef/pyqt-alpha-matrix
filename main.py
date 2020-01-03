@@ -5,11 +5,10 @@ from PyQt5.QtCore import *
 from PyQt5.QtSerialPort import *
 import secrets
 import csv
-import scanner, ag_scanner
+import scanner
+import ag_scanner
 import config
 import re
-
-
 
 
 class Main(QMainWindow):
@@ -21,7 +20,6 @@ class Main(QMainWindow):
         # self.setFixedSize(self.size())
         self.UI()
         self.show()
-        # self.signal_connect()
 
     def UI(self):
         self.toolbar()
@@ -41,9 +39,9 @@ class Main(QMainWindow):
         self.setScannerAction = QAction(QIcon('icons/barcode-scanner-32'), 'Set Scanner', self)
         self.setScannerAction.triggered.connect(self.setScanner)
         self.toolbar.addAction(self.setScannerAction)
-        self.setAgScanner = QAction(QIcon('icons/qr-code-scan-24'), "Set Aggregate", self)
-        self.setAgScanner.triggered.connect(self.AgScanner)
-        self.toolbar.addAction(self.setAgScanner)
+        self.setAgScannerAction = QAction(QIcon('icons/qr-code-scan-24'), "Set Aggregate", self)
+        self.setAgScannerAction.triggered.connect(self.setAgScanner)
+        self.toolbar.addAction(self.setAgScannerAction)
         self.setRejectorAction = QAction(QIcon('icons/trash.png'), "Set Rejector", self)
         self.toolbar.addAction(self.setRejectorAction)
         self.toolbar.addSeparator()
@@ -94,6 +92,7 @@ class Main(QMainWindow):
         self.generateButton = QPushButton("Generate")
         self.generateButton.clicked.connect(self.generateCodes)
         self.resetButton = QPushButton("Reset")
+        self.resetButton.setEnabled(False)
         self.resetButton.clicked.connect(self.resetCodeGen)
         self.exportButton = QPushButton("Export CSV")
         self.exportButton.setDisabled(True)
@@ -144,7 +143,9 @@ class Main(QMainWindow):
         self.scan_serial_text.setFixedHeight(100)
         self.scanExportButton = QPushButton("Export CSV")
         self.scanExportButton.clicked.connect(self.scanExport)
+        self.scanExportButton.setEnabled(False)
         self.scanResetButton = QPushButton("Reset")
+        self.scanResetButton.setEnabled(False)
         self.scanResetButton.clicked.connect(self.resetScanTable)
 
         # Scan bottom widgets
@@ -191,10 +192,19 @@ class Main(QMainWindow):
         self.aggregate_serial_text = QTextEdit()
         self.aggregate_serial_text.setReadOnly(True)
         self.aggregate_serial_text.setFixedHeight(100)
+        self.aggregate_print_button = QPushButton("Print Label")
+        self.aggregate_print_button.setEnabled(False)
+        self.aggregate_export_button = QPushButton("Export CSV")
+        self.aggregate_export_button.setEnabled(False)
+        self.aggregate_reset_button = QPushButton("Reset")
+        self.aggregate_reset_button.setEnabled(False)
+        self.aggregate_reset_button.clicked.connect(self.reset_aggregation_table)
 
         # Aggregation bottom widgets
-        self.aggregate_reject_lcd = QLCDNumber()
-        self.aggregate_reject_lcd.setMinimumHeight(80)
+        self.aggregate_count_lcd = QLCDNumber()
+        self.aggregate_count_lcd.setMinimumHeight(80)
+        self.aggregate_counter_reset_button = QPushButton("Reset")
+        self.aggregate_counter_reset_button.clicked.connect(self.reset_aggregate_counter)
 
     def layouts(self):
         # tab1
@@ -282,7 +292,7 @@ class Main(QMainWindow):
         self.aggregateMainLeftLayout = QVBoxLayout()
         self.aggregateMainRightLayout = QVBoxLayout()
         self.aggregateRightTopLayout = QFormLayout()
-        self.aggregateRightMiddleLayout = QHBoxLayout()
+        self.aggregateRightMiddleLayout = QVBoxLayout()
         self.aggregateTopGroupBox = QGroupBox("Scanned Code")
         self.aggregateTopGroupBox.setContentsMargins(20, 40, 20, 20)
         self.aggregateMiddleGroupBox = QGroupBox("Product Counter")
@@ -295,9 +305,13 @@ class Main(QMainWindow):
         self.aggregateRightTopLayout.addRow(self.aggregate_prod_label, self.aggregate_prod_text)
         self.aggregateRightTopLayout.addRow(self.aggregate_exp_label, self.aggregate_exp_text)
         self.aggregateRightTopLayout.addRow(self.aggregate_serial_label, self.aggregate_serial_text)
+        self.aggregateRightTopLayout.addRow('', self.aggregate_reset_button)
+        self.aggregateRightTopLayout.addRow('', self.aggregate_print_button)
+        self.aggregateRightTopLayout.addRow('', self.aggregate_export_button)
 
         # Right bottom layout
-        self.aggregateRightMiddleLayout.addWidget(self.aggregate_reject_lcd)
+        self.aggregateRightMiddleLayout.addWidget(self.aggregate_count_lcd)
+        self.aggregateRightMiddleLayout.addWidget(self.aggregate_counter_reset_button)
 
         self.aggregateTopGroupBox.setLayout(self.aggregateRightTopLayout)
         self.aggregateMiddleGroupBox.setLayout(self.aggregateRightMiddleLayout)
@@ -306,7 +320,6 @@ class Main(QMainWindow):
         self.aggregateMainLayout.addLayout(self.aggregateMainLeftLayout, 70)
         self.aggregateMainLayout.addLayout(self.aggregateMainRightLayout, 30)
         self.tab3.setLayout(self.aggregateMainLayout)
-
 
     def resetCodeGen(self):
         self.nieEntry.setText("")
@@ -345,6 +358,7 @@ class Main(QMainWindow):
 
             if len(codes) > 0:
                 self.exportButton.setEnabled(True)
+                self.resetButton.setEnabled(True)
 
         else:
             QMessageBox.information(self, "Warning", "Fields can't be empty")
@@ -359,7 +373,8 @@ class Main(QMainWindow):
             raw_prod_date = code[3].split('/')[2] + code[3].split('/')[1] + code[3].split('/')[0]
             raw_expired_date = code[4].split('/')[2] + code[4].split('/')[1] + code[4].split('/')[0]
 
-            raw_codes.append(('(90)'+code[0], '(91)'+raw_nie_expiry, '(10)'+code[2], '(11)'+raw_prod_date, '(17)'+raw_expired_date, '(21)'+code[5]))
+            raw_codes.append(('(90)' + code[0], '(91)' + raw_nie_expiry, '(10)' + code[2], '(11)' + raw_prod_date,
+                              '(17)' + raw_expired_date, '(21)' + code[5]))
 
         formatted_file_name = 'codes' + date_time + '.csv'
         file_name = QFileDialog.getSaveFileName(self, 'Save File', formatted_file_name, 'CSV (*.csv)')
@@ -411,43 +426,59 @@ class Main(QMainWindow):
         self.newScanner.connect_signal.connect(self.connect_scanner)
         self.newScanner.disconnect_signal.connect(self.disconnect_scanner)
 
-    def AgScanner(self):
-        self.newAgScanner = ag_scanner.SetAgScanner()
+    def setAgScanner(self):
+        self.newAgScanner = ag_scanner.AgScanner()
+        self.newAgScanner.connect_signal.connect(self.connect_ag_scanner)
+        self.newAgScanner.disconnect_signal.connect(self.disconnect_ag_scanner)
 
-    # @staticmethod
     def connect_scanner(self, port):
-        self.scanner = QSerialPort(port, baudRate=QSerialPort.Baud115200, readyRead=self.scanReceive)
-        if not self.scanner.isOpen():
-            res = self.scanner.open(QIODevice.ReadWrite)
-            config.scanner_connected = True
-            if not res:
-                print('Open port gagal')
+        if config.ag_scanner_port != port:
+            self.scanner = QSerialPort(port, baudRate=QSerialPort.Baud115200, readyRead=self.scanReceive)
+            if not self.scanner.isOpen():
+                res = self.scanner.open(QIODevice.ReadWrite)
+                config.scanner_connected = True
+                config.scanner_port = port
+                if not res:
+                    print('Open port gagal')
+        else:
+            # self.newScanner.connectButton.setChecked(False)
+            self.newScanner.close()
+            QMessageBox.information(self, "Serial Port", "Port has already been used!")
 
-    # @staticmethod
     def disconnect_scanner(self):
         self.scanner.close()
         config.scanner_connected = False
+        config.scanner_port = ''
 
     def scanReceive(self):
+        line_code = []
+
         while self.scanner.canReadLine():
             self.code_text = self.scanner.readLine().data().decode()
             self.code_text = self.code_text.rstrip('\r\n')
 
-        self.get_code(self.code_text)
+        # self.get_code(self.code_text)
+        line_code = self.get_line_code(self.code_text)
 
         # Insert data to table on tab2
         row_number = self.scannedCodesTable.rowCount()
         self.scannedCodesTable.insertRow(row_number)
-        for column_number, data in enumerate(self.code):
+        for column_number, data in enumerate(line_code):
             self.scannedCodesTable.setItem(row_number, column_number, QTableWidgetItem(data))
 
-        # Update right top info
-        self.scan_nie_text.setText(self.code[0])
-        self.scan_nie_exp_text.setText(self.code[1])
-        self.scan_batch_text.setText(self.code[2])
-        self.scan_prod_text.setText(self.code[3])
-        self.scan_exp_text.setText(self.code[4])
-        self.scan_serial_text.setText(self.code[5])
+        self.scan_nie_text.setText(line_code[0])
+        self.scan_nie_exp_text.setText(line_code[1])
+        self.scan_batch_text.setText(line_code[2])
+        self.scan_prod_text.setText(line_code[3])
+        self.scan_exp_text.setText(line_code[4])
+        self.scan_serial_text.setText(line_code[5])
+
+        # Enable reset and export buttons if otherwise
+        if not self.scanResetButton.isEnabled():
+            self.scanResetButton.setEnabled(True)
+
+        if not self.scanExportButton.isEnabled():
+            self.scanExportButton.setEnabled(True)
 
         # Update counter
         config.scan_count += 1
@@ -459,33 +490,6 @@ class Main(QMainWindow):
         self.scan_success_lcd.display(scanned)
         self.scan_reject_lcd.display(scan_reject)
         self.scan_rate_lcd.display(scan_rate)
-
-    def get_code(self, text):
-        nie_pattern = '\(90\)\w*'
-        nie_exp_pattern = '\(91\)\w*'
-        batch_pattern = '\(10\)\w*'
-        prod_pattern = '\(11\)\w*'
-        exp_pattern = '\(17\)\w*'
-        serial_pattern = '\(21\)\w*'
-
-        self.code = []
-
-        nie = self.get_sub_code(nie_pattern, text)
-        nie_exp = self.get_sub_code(nie_exp_pattern, text)
-        nie_exp = nie_exp[6:] + '/' + nie_exp[4:6] + '/' + nie_exp[:4]
-        batch = self.get_sub_code(batch_pattern, text)
-        prod = self.get_sub_code(prod_pattern, text)
-        prod = prod[6:] + '/' + prod[4:6] + '/' + prod[:4]
-        exp = self.get_sub_code(exp_pattern, text)
-        exp = exp[6:] + '/' + exp[4:6] + '/' + exp[:4]
-        serial = self.get_sub_code(serial_pattern, text)
-
-        self.code.append(nie)
-        self.code.append(nie_exp)
-        self.code.append(batch)
-        self.code.append(prod)
-        self.code.append(exp)
-        self.code.append(serial)
 
     def get_sub_code(self, pattern, text):
         res = re.findall(pattern, text)
@@ -503,7 +507,8 @@ class Main(QMainWindow):
         self.scan_rate_lcd.display(rate)
 
     def resetScanTable(self):
-        confirm = QMessageBox.question(self, "Warning", "Are you sure to reset scanned codes?", QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
+        confirm = QMessageBox.question(self, "Warning", "Are you sure to reset scanned codes?",
+                                       QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
         if confirm == QMessageBox.Yes:
             row_count = self.scannedCodesTable.rowCount()
             for row in reversed(range(0, row_count)):
@@ -515,6 +520,9 @@ class Main(QMainWindow):
             self.scan_prod_text.setText('')
             self.scan_exp_text.setText('')
             self.scan_serial_text.setText('')
+
+            self.scanResetButton.setEnabled(False)
+            self.scanExportButton.setEnabled(False)
 
     def scanExport(self):
         date_time = QDateTime.currentDateTime().toString("yyMMddhhmmss")
@@ -541,6 +549,115 @@ class Main(QMainWindow):
                 QMessageBox.information(self, 'Success', 'CSV has been exported')
             except:
                 QMessageBox.information(self, 'Error', 'CSV has not been exported')
+
+    def connect_ag_scanner(self, port):
+        if config.scanner_port != port:
+            self.ag_scanner = QSerialPort(port, baudRate=QSerialPort.Baud115200, readyRead=self.agScanReceive)
+            if not self.ag_scanner.isOpen():
+                res = self.ag_scanner.open(QIODevice.ReadWrite)
+                config.ag_scanner_connected = True
+                config.ag_scanner_port = port
+                if not res:
+                    print('Open port gagal')
+        else:
+            self.newAgScanner.close()
+            QMessageBox.information(self, "Serial Port", "Port has been used")
+
+    def disconnect_ag_scanner(self):
+        self.ag_scanner.close()
+        config.ag_scanner_connected = False
+        config.ag_scanner_port = ''
+
+    def agScanReceive(self):
+        line_code = []
+
+        while self.ag_scanner.canReadLine():
+            self.ag_code_text = self.ag_scanner.readLine().data().decode()
+            self.ag_code_text = self.ag_code_text.rstrip('\r\n')
+
+        line_code = self.get_line_code(self.ag_code_text)
+
+        self.aggregate_nie_text.setText(line_code[0])
+        self.aggregate_nie_exp_text.setText(line_code[1])
+        self.aggregate_batch_text.setText(line_code[2])
+        self.aggregate_prod_text.setText(line_code[3])
+        self.aggregate_exp_text.setText(line_code[4])
+        self.aggregate_serial_text.setText(line_code[5])
+
+        # Insert data to table on tab3
+        row_number = self.aggregationCodesTable.rowCount()
+        self.aggregationCodesTable.insertRow(row_number)
+        for column_number, data in enumerate(line_code):
+            self.aggregationCodesTable.setItem(row_number, column_number, QTableWidgetItem(data))
+
+        # Enable reset & export buttons if otherwise
+        if not self.aggregate_reset_button.isEnabled():
+            self.aggregate_reset_button.setEnabled(True)
+
+        if not self.aggregate_export_button.isEnabled():
+            self.aggregate_export_button.setEnabled(True)
+
+        if not self.aggregate_print_button.isEnabled():
+            self.aggregate_print_button.setEnabled(True)
+
+        # Update counter
+        config.ag_scan_count += 1
+        scanned = str(config.ag_scan_count)
+
+        self.aggregate_count_lcd.display(scanned)
+
+    def get_line_code(self, text):
+        nie_pattern = '\(90\)\w*'
+        nie_exp_pattern = '\(91\)\w*'
+        batch_pattern = '\(10\)\w*'
+        prod_pattern = '\(11\)\w*'
+        exp_pattern = '\(17\)\w*'
+        serial_pattern = '\(21\)\w*'
+
+        line_code = []
+
+        nie = self.get_sub_code(nie_pattern, text)
+        nie_exp = self.get_sub_code(nie_exp_pattern, text)
+        nie_exp = nie_exp[6:] + '/' + nie_exp[4:6] + '/' + nie_exp[:4]
+        batch = self.get_sub_code(batch_pattern, text)
+        prod = self.get_sub_code(prod_pattern, text)
+        prod = prod[6:] + '/' + prod[4:6] + '/' + prod[:4]
+        exp = self.get_sub_code(exp_pattern, text)
+        exp = exp[6:] + '/' + exp[4:6] + '/' + exp[:4]
+        serial = self.get_sub_code(serial_pattern, text)
+
+        line_code.append(nie)
+        line_code.append(nie_exp)
+        line_code.append(batch)
+        line_code.append(prod)
+        line_code.append(exp)
+        line_code.append(serial)
+
+        return line_code
+
+    def reset_aggregation_table(self):
+        confirm = QMessageBox.question(self, "Warning", "Are you sure to reset table?",
+                                       QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
+        if confirm == QMessageBox.Yes:
+            row_count = self.aggregationCodesTable.rowCount()
+            for row in reversed(range(0, row_count)):
+                self.aggregationCodesTable.removeRow(row)
+
+            self.aggregate_nie_text.setText('')
+            self.aggregate_nie_exp_text.setText('')
+            self.aggregate_batch_text.setText('')
+            self.aggregate_prod_text.setText('')
+            self.aggregate_exp_text.setText('')
+            self.aggregate_serial_text.setText('')
+
+            self.aggregate_reset_button.setEnabled(False)
+            self.aggregate_export_button.setEnabled(False)
+            self.aggregate_print_button.setEnabled(False)
+
+    def reset_aggregate_counter(self):
+        config.ag_scan_count = 0
+        count = str(config.ag_scan_count)
+        self.aggregate_count_lcd.display(count)
 
 
 def main():

@@ -1,13 +1,15 @@
 import sys
-from PyQt5.QtWidgets import *
-from PyQt5.QtGui import *
 from PyQt5.Qt import *
+from PyQt5.QtWidgets import *
 import style
 import config
 import serial.tools.list_ports
 
 
-class SetAgScanner(QWidget):
+class AgScanner(QWidget):
+    connect_signal = pyqtSignal(str)
+    disconnect_signal = pyqtSignal()
+
     def __init__(self):
         super().__init__()
         self.setWindowTitle("Scanner")
@@ -15,11 +17,11 @@ class SetAgScanner(QWidget):
         self.setGeometry(460, 200, 350, 550)
         self.setFixedSize(self.size())
         self.UI()
-        self.serial_port()
         self.show()
 
     def serial_port(self):
         self.ports = serial.tools.list_ports.comports(include_links=False)
+        config.ports = []
         for port in self.ports:
             config.ports.append(port.device)
 
@@ -28,6 +30,7 @@ class SetAgScanner(QWidget):
     def UI(self):
         self.widgets()
         self.layouts()
+        self.serial_port()
 
     def widgets(self):
         self.titleText = QLabel("Set Scanner")
@@ -41,7 +44,13 @@ class SetAgScanner(QWidget):
         self.portText = QLabel("Select Port: ")
         self.portCombo = QComboBox()
         self.connectButton = QPushButton("Connect")
-        self.disconnectButton = QPushButton("Disconnect")
+        self.connectButton.setCheckable(True)
+        self.connectButton.toggled.connect(self.on_toggled)
+
+        if config.ag_scanner_connected:
+            self.connectButton.setChecked(True)
+        else:
+            self.connectButton.setChecked(False)
 
     def layouts(self):
         self.mainLayout = QVBoxLayout()
@@ -61,7 +70,6 @@ class SetAgScanner(QWidget):
         # Bottom layout widgets
         self.bottomLayout.addRow(self.portText, self.portCombo)
         self.bottomLayout.addRow('', self.connectButton)
-        self.bottomLayout.addRow('', self.disconnectButton)
 
         self.topFrame.setLayout(self.topLayout)
         self.bottomFrame.setLayout(self.bottomLayout)
@@ -69,10 +77,18 @@ class SetAgScanner(QWidget):
         self.mainLayout.addWidget(self.bottomFrame)
         self.setLayout(self.mainLayout)
 
+    def on_toggled(self, checked):
+        self.connectButton.setText('Disconnect' if checked else 'Connect')
+
+        if checked:
+            self.connect_signal.emit(self.portCombo.currentText())
+        else:
+            self.disconnect_signal.emit()
+
 
 def main():
     App = QApplication(sys.argv)
-    window = Window()
+    window = AgScanner()
     sys.exit(App.exec_())
 
 

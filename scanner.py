@@ -1,9 +1,6 @@
 import sys
-from PyQt5.QtWidgets import *
-from PyQt5.QtGui import *
-from PyQt5.QtCore import *
-from PyQt5.QtSerialPort import *
 from PyQt5.Qt import *
+from PyQt5.QtWidgets import *
 import serial.tools.list_ports
 import style
 import config
@@ -25,6 +22,7 @@ class SetScanner(QWidget):
     def serial_port(self):
         self.ports = serial.tools.list_ports.comports(include_links=False)
         # self.availablePorts = []
+        config.ports = []
         for port in self.ports:
             config.ports.append(port.device)
 
@@ -84,6 +82,7 @@ class SetScanner(QWidget):
     # @QtCore.pyqtSlot(bool)
     def on_toggled(self, checked):
         self.connectButton.setText('Disconnect' if checked else 'Connect')
+
         if checked:
             self.connect_signal.emit(self.portCombo.currentText())
         else:
@@ -92,7 +91,7 @@ class SetScanner(QWidget):
 
 def main():
     App = QApplication(sys.argv)
-    window = Window()
+    window = SetScanner()
     sys.exit(App.exec_())
 
 
