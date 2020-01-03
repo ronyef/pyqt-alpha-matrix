@@ -62,15 +62,19 @@ class Main(QMainWindow):
         # Main Widgets
         self.codesTable = QTableWidget()
         self.codesTable.setColumnCount(6)
+        self.codesTable.setEditTriggers(QTableWidget.NoEditTriggers)
         self.codesTable.setHorizontalHeaderItem(0, QTableWidgetItem("NIE"))
         self.codesTable.setHorizontalHeaderItem(1, QTableWidgetItem("NIE Exp"))
         self.codesTable.setHorizontalHeaderItem(2, QTableWidgetItem("Batch"))
         self.codesTable.setHorizontalHeaderItem(3, QTableWidgetItem("Prod Date"))
         self.codesTable.setHorizontalHeaderItem(4, QTableWidgetItem("Expired"))
         self.codesTable.setHorizontalHeaderItem(5, QTableWidgetItem("Serial"))
-        self.codesTable.horizontalHeader().setSectionResizeMode(1, QHeaderView.Stretch)
-        self.codesTable.horizontalHeader().setSectionResizeMode(3, QHeaderView.Stretch)
-        self.codesTable.horizontalHeader().setSectionResizeMode(4, QHeaderView.Stretch)
+        self.codesTable.horizontalHeader().setSectionResizeMode(0, QHeaderView.Interactive)
+        self.codesTable.horizontalHeader().setSectionResizeMode(1, QHeaderView.ResizeToContents)
+        self.codesTable.horizontalHeader().setSectionResizeMode(2, QHeaderView.Interactive)
+        self.codesTable.horizontalHeader().setSectionResizeMode(3, QHeaderView.ResizeToContents)
+        self.codesTable.horizontalHeader().setSectionResizeMode(4, QHeaderView.ResizeToContents)
+        self.codesTable.horizontalHeader().setSectionResizeMode(5, QHeaderView.Stretch)
 
         # right top widgets
         self.nieEntry = QLineEdit()
@@ -111,15 +115,19 @@ class Main(QMainWindow):
         # Scanner Widgets
         self.scannedCodesTable = QTableWidget()
         self.scannedCodesTable.setColumnCount(6)
+        self.scannedCodesTable.setEditTriggers(QTableWidget.NoEditTriggers)
         self.scannedCodesTable.setHorizontalHeaderItem(0, QTableWidgetItem("NIE"))
         self.scannedCodesTable.setHorizontalHeaderItem(1, QTableWidgetItem("NIE Exp"))
         self.scannedCodesTable.setHorizontalHeaderItem(2, QTableWidgetItem("Batch"))
         self.scannedCodesTable.setHorizontalHeaderItem(3, QTableWidgetItem("Prod Date"))
         self.scannedCodesTable.setHorizontalHeaderItem(4, QTableWidgetItem("Expired"))
         self.scannedCodesTable.setHorizontalHeaderItem(5, QTableWidgetItem("Serial"))
-        self.scannedCodesTable.horizontalHeader().setSectionResizeMode(1, QHeaderView.Stretch)
-        self.scannedCodesTable.horizontalHeader().setSectionResizeMode(3, QHeaderView.Stretch)
-        self.scannedCodesTable.horizontalHeader().setSectionResizeMode(4, QHeaderView.Stretch)
+        self.scannedCodesTable.horizontalHeader().setSectionResizeMode(0, QHeaderView.Interactive)
+        self.scannedCodesTable.horizontalHeader().setSectionResizeMode(1, QHeaderView.ResizeToContents)
+        self.scannedCodesTable.horizontalHeader().setSectionResizeMode(2, QHeaderView.Interactive)
+        self.scannedCodesTable.horizontalHeader().setSectionResizeMode(3, QHeaderView.ResizeToContents)
+        self.scannedCodesTable.horizontalHeader().setSectionResizeMode(4, QHeaderView.ResizeToContents)
+        self.scannedCodesTable.horizontalHeader().setSectionResizeMode(5, QHeaderView.Stretch)
 
         # Scan top right widgets
         self.scan_nie_label = QLabel("NIE : ")
@@ -162,15 +170,19 @@ class Main(QMainWindow):
         # AGGREGATION WIDGET
         self.aggregationCodesTable = QTableWidget()
         self.aggregationCodesTable.setColumnCount(6)
+        self.aggregationCodesTable.setEditTriggers(QTableWidget.NoEditTriggers)
         self.aggregationCodesTable.setHorizontalHeaderItem(0, QTableWidgetItem("NIE"))
         self.aggregationCodesTable.setHorizontalHeaderItem(1, QTableWidgetItem("NIE Exp"))
         self.aggregationCodesTable.setHorizontalHeaderItem(2, QTableWidgetItem("Batch"))
         self.aggregationCodesTable.setHorizontalHeaderItem(3, QTableWidgetItem("Prod Date"))
         self.aggregationCodesTable.setHorizontalHeaderItem(4, QTableWidgetItem("Expired"))
         self.aggregationCodesTable.setHorizontalHeaderItem(5, QTableWidgetItem("Serial"))
-        self.aggregationCodesTable.horizontalHeader().setSectionResizeMode(1, QHeaderView.Stretch)
-        self.aggregationCodesTable.horizontalHeader().setSectionResizeMode(3, QHeaderView.Stretch)
-        self.aggregationCodesTable.horizontalHeader().setSectionResizeMode(4, QHeaderView.Stretch)
+        self.aggregationCodesTable.horizontalHeader().setSectionResizeMode(0, QHeaderView.Interactive)
+        self.aggregationCodesTable.horizontalHeader().setSectionResizeMode(1, QHeaderView.ResizeToContents)
+        self.aggregationCodesTable.horizontalHeader().setSectionResizeMode(2, QHeaderView.Interactive)
+        self.aggregationCodesTable.horizontalHeader().setSectionResizeMode(3, QHeaderView.ResizeToContents)
+        self.aggregationCodesTable.horizontalHeader().setSectionResizeMode(4, QHeaderView.ResizeToContents)
+        self.aggregationCodesTable.horizontalHeader().setSectionResizeMode(5, QHeaderView.Stretch)
 
         # Scan top right widgets
         self.aggregate_nie_label = QLabel("NIE : ")
@@ -326,6 +338,7 @@ class Main(QMainWindow):
         self.batchEntry.setText("")
         self.codeQuantityEntry.setText("")
         self.exportButton.setEnabled(False)
+        self.resetButton.setEnabled(False)
 
         row_count = self.codesTable.rowCount()
         for row in reversed(range(0, row_count)):
