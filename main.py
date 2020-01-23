@@ -7,6 +7,7 @@ import secrets
 import csv
 import scanner
 import ag_scanner
+import rejector
 import config
 import re
 
@@ -43,6 +44,7 @@ class Main(QMainWindow):
         self.setAgScannerAction.triggered.connect(self.setAgScanner)
         self.toolbar.addAction(self.setAgScannerAction)
         self.setRejectorAction = QAction(QIcon('icons/trash.png'), "Set Rejector", self)
+        self.setRejectorAction.triggered.connect(self.setRejector)
         self.toolbar.addAction(self.setRejectorAction)
         self.toolbar.addSeparator()
 
@@ -549,7 +551,13 @@ class Main(QMainWindow):
             self.code_text = self.scanner.readLine().data().decode()
             self.code_text = self.code_text.rstrip('\r\n')
 
-        # self.get_code(self.code_text)
+        print(self.code_text)
+
+        if self.code_text == 'ERROR':
+            config.scan_reject += 1
+            self.update_scan_lcd()
+            return
+
         line_code = self.get_line_code(self.code_text)
 
         # Insert data to table on tab2
@@ -574,6 +582,9 @@ class Main(QMainWindow):
 
         # Update counter
         config.scan_count += 1
+        self.update_scan_lcd()
+
+    def update_scan_lcd(self):
         config.scan_rate = round((config.scan_count - config.scan_reject) / config.scan_count * 100, 2)
         scanned = str(config.scan_count)
         scan_rate = str(config.scan_rate)
@@ -750,6 +761,32 @@ class Main(QMainWindow):
         config.ag_scan_count = 0
         count = str(config.ag_scan_count)
         self.aggregate_count_lcd.display(count)
+
+    def setRejector(self):
+        self.newRejector = rejector.Rejector()
+        self.newRejector.connect_signal.connect(self.connect_rejector)
+        self.newRejector.disconnect_signal.connect(self.disconnect_rejector)
+
+    def connect_rejector(self, port):
+        if config.rejector_port != port:
+            self.rejector = QSerialPort(port, baudRate=QSerialPort.Baud115200, readyRead=self.rejectorReceive)
+            if not self.rejector.isOpen():
+                res = self.rejector.open(QIODevice.ReadWrite)
+                config.rejector_connected = True
+                config.rejector_port = port
+                if not res:
+                    print('Open port gagal')
+        else:
+            self.newAgScanner.close()
+            QMessageBox.information(self, "Serial Port", "Port has been used")
+
+    def disconnect_rejector(self):
+        self.rejector.close()
+        config.rejector_connected = False
+        config.rejector_port = ''
+
+    def rejectorReceive(self):
+        pass
 
 
 def main():
