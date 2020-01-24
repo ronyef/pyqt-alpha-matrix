@@ -585,14 +585,17 @@ class Main(QMainWindow):
         self.update_scan_lcd()
 
     def update_scan_lcd(self):
-        config.scan_rate = round((config.scan_count - config.scan_reject) / config.scan_count * 100, 2)
-        scanned = str(config.scan_count)
-        scan_rate = str(config.scan_rate)
-        scan_reject = str(config.scan_reject)
+        try:
+            config.scan_rate = round((config.scan_count - config.scan_reject) / config.scan_count * 100, 2)
+            scanned = str(config.scan_count)
+            scan_rate = str(config.scan_rate)
+            scan_reject = str(config.scan_reject)
 
-        self.scan_success_lcd.display(scanned)
-        self.scan_reject_lcd.display(scan_reject)
-        self.scan_rate_lcd.display(scan_rate)
+            self.scan_success_lcd.display(scanned)
+            self.scan_reject_lcd.display(scan_reject)
+            self.scan_rate_lcd.display(scan_rate)
+        except Exception as e:
+            print(e.message)
 
     def get_sub_code(self, pattern, text):
         res = re.findall(pattern, text)
