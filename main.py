@@ -554,9 +554,13 @@ class Main(QMainWindow):
         print(self.code_text)
 
         if self.code_text == 'ERROR':
-            config.scan_reject += 1
-            self.update_scan_lcd()
+            if config.scan_count > 0:
+                config.scan_reject += 1
+                self.update_scan_lcd()
+                return
+
             return
+
 
         line_code = self.get_line_code(self.code_text)
 
@@ -595,7 +599,7 @@ class Main(QMainWindow):
             self.scan_reject_lcd.display(scan_reject)
             self.scan_rate_lcd.display(scan_rate)
         except Exception as e:
-            print(e.message)
+            print('Terjadi kesalahan: ' + str(e))
 
     def get_sub_code(self, pattern, text):
         res = re.findall(pattern, text)
